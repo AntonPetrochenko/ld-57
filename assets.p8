@@ -1,10 +1,6 @@
 pico-8 cartridge // http://www.pico-8.com
 version 42
 __lua__
-player = {
- x = 64,
- y = 64
-}
 
 function player_gfx_controller(p)
 

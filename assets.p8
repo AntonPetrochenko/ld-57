@@ -76,7 +76,7 @@ function spider_gfx_controller(p)
 
 		
 
-		pavuk_timer += 1
+		pavuk_timer += tmp_camera_speed or 0
 
 		local c_bak = peek4(0x5f28)
 		camera(-64,0)
@@ -100,8 +100,8 @@ function spider_gfx_controller(p)
 			end
 		end
 
-		ovalfill(-21,-1,21,33,1)
-		draw_fk_arms(1,-1,5)
+		ovalfill(-21,-1,21,33,0)
+		draw_fk_arms(0,-1,5)
 
 		
 		

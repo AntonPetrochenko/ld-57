@@ -64,6 +64,14 @@ function build_snake(x, y)
     }
 end
 
+function sign(n)
+    if n == 0 then
+        return 0
+    else
+        return n / abs(n)
+    end
+end
+
 function build_bat(x, y) 
     local function draw(self)
         spr(self.sprites[self.curr_spr], self.x-4, self.y, 1, 1, self.flip)
@@ -71,14 +79,36 @@ function build_bat(x, y)
     end
 
     local function next_step(self)
-        local move = tile_size * self.dir
-        curr_tile_n = mget((self.x + move) / tile_size, self.y / tile_size)
-        
-        if fget(curr_tile_n, 0) then
-            move = 0
+        local dir = {x = (player.x - self.x), y = (player.y - self.y)}
+        local move = {x = sign(dir.x) * tile_size, y = sign(dir.y) * tile_size}
+
+
+        if abs(dir.x) >= abs(dir.y) and fget(mget((self.x + move.x) / tile_size, (self.y + move.y) / tile_size), 0) then 
+            move.x = 0
+            move.y = sign(dir.y) * tile_size
         end
         
-        self.x += move
+        if move.x != 0 and move.y != 0 then
+            move.y = 0
+            move.x = sign(dir.x) * tile_size
+        end
+
+        if abs(player.y - self.y) > 0 and move.x == 0 and fget(mget(self.x / tile_size, (self.y + sign(dir.y) * tile_size) / tile_size), 0) then 
+            move.x = 0
+            move.y = sign(dir.y) * tile_size
+        end
+
+
+        curr_tile_n = mget((self.x + move.x) / tile_size, (self.y + move.y) / tile_size)
+        
+        if fget(curr_tile_n, 0) then
+            move.x = 0
+            move.y = 0
+        end
+        
+        
+        self.x += move.x
+        self.y += move.y
 
         self.curr_spr += 1
         if self.curr_spr > #self.sprites then self.curr_spr = 1 end

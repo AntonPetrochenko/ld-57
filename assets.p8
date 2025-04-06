@@ -113,6 +113,30 @@ function player_gfx_controller(p)
 	
 end
 
+game_won = true
+
+stable_win_timer = 0
+wtimer = 0
+wtd = 0.1
+function win_game()
+	music(37)
+	while true do
+		stable_win_timer += 1
+		wtd *= 1.3
+		wtimer += wtd
+		rectfill(64-wtimer*2,0,64+wtimer*2,128,1)
+		rectfill(64-wtimer*1.5,0,64+wtimer*1.5,128,2)
+		rectfill(64-wtimer*1.3,0,64+wtimer*1.3,128,13)
+		rectfill(64-wtimer,0,64+wtimer,128,7)
+
+		if (stable_win_timer > 30) then
+			print('yOU WIN!',12,32,1)
+			print('tHANK YOU FOR PLAYING!')
+		end
+		flip()
+	end
+end
+
 
 function spider_gfx_controller(p)
 	local pavuk_health = 100

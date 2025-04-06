@@ -35,9 +35,8 @@ health = 3
 extra_dig_chance = 0
 boss_health = 100
 
-boss_y = 4
+spider_collider_y = 4 * tile_size
 push_size = 4
-
 
 pickaxe_double_flag = false
 
@@ -51,13 +50,97 @@ enemies = {}
 projectiles = {}
 puffs = {}
 
+function _init()
+    player.x = 6 * tile_size
+    player.y = 10 * tile_size
+    gem_power_count = 0
+    gem_upgrade_count = 0
+    gem_projectile_count = 0
+    health = 3
+    extra_dig_chance = 0
+    boss_health = 100
+end
+
+
+projectiles_speed = 4
+
+function proj_draw()
+    for i=1,#projectiles,1 do
+        local proj = projectiles[i]
+        if proj !=nil then spr(14, proj.x, proj.y) end
+    end
+end
+
+function proj_update()
+    for i=1,#projectiles,1 do
+        local proj = projectiles[i]
+        if proj != nil then 
+            local curr_tile_n = mget((proj.x + proj.dx) / tile_size, (proj.y + proj.dy) / tile_size)
+            if fget(curr_tile_n, 0) and not fget(curr_tile_n, 1) then
+                del(projectiles, proj)
+            end
+            proj.x += proj.dx 
+            proj.y += proj.dy
+        end
+    end
+end
+
+function proj_enemy_collide()
+    for i=1,#projectiles,1 do
+        local proj = projectiles[i]
+        if proj != nil then
+            for i=1,#enemies,1 do
+                local em = enemies[i]
+                if em != nil and em.x == proj.x and em.y == proj.y then
+                    del(projectiles, proj)
+                    del(enemies, em)
+                end
+            end
+        end
+    end
+end
+
+function proj_spider_collide()
+    for i=1,#projectiles,1 do
+        local proj = projectiles[i]
+        if proj != nil then
+            if proj.y < spider_collider_y + 1 and proj.x > 5 * tile_size and proj.x < 10 * tile_size then
+                del(projectiles, proj)
+                spider_damage(2)
+            end
+        end
+    end
+end
+
+
 function build_projectile(p)
     local v = get_player_dir()
+    
+    local dx = 0
+    local dy = 0
+
+    if v == 0 then 
+        dx = 0
+        dy = projectiles_speed
+    end
+    if v == 1 then 
+        dx = projectiles_speed
+        dy = 0
+    end
+    if v == 2 then 
+        dx = 0
+        dy = -projectiles_speed
+    end
+    if v == 3 then 
+        dx = -projectiles_speed
+        dy = 0
+    end
+    
     projectiles[#projectiles+1] = {
         x = p.x,
         y = p.y,
-        dx = v[1],
-        dy = v[2]
+        dx = dx,
+        dy = dy,
     }
 end
 
@@ -224,17 +307,6 @@ function player.draw(self)
     player_gfx_draw()
 end
 
-function _init()
-    player.x = 6 * tile_size
-    player.y = 10 * tile_size
-    gem_power_count = 0
-    gem_upgrade_count = 0
-    gem_projectile_count = 0
-    health = 3
-    extra_dig_chance = 0
-    boss_health = 100
-
-end
 
 function updategame()
     move = {x = 0, y = 0}
@@ -250,6 +322,10 @@ function updategame()
         end
         if btnp(3) then 
             move.y = tile_size
+        end
+        if btnp(4) and gem_projectile_count > 0 then 
+            gem_projectile_count -= 1 
+            build_projectile(player)
         end
 
         if ( gem_power_count > 2 and btnp(❎)) then
@@ -327,6 +403,11 @@ function updategame()
             pickaxe_double_flag = true
         end
     end
+
+    
+    proj_update()
+    proj_spider_collide()
+    proj_enemy_collide()
 end
 
 function enemy_collide()
@@ -351,6 +432,7 @@ function drawgame()
     map(0, 0, 0, 0, 16, 17)
     player:draw()
     enemies:draw()
+    proj_draw()
 
     -- hud
     camera()
@@ -465,20 +547,20 @@ function _move_map()
 end
 
 function spider_colide()
-    if player.y / tile_size < boss_y then 
+    if player.y < spider_collider_y then 
         health -= 1
         for i=1,push_size,1 do
-            mset(player.x / tile_size, (player.y / tile_size) + i, floor_tile) 
+            local t = flr(rnd(5) + 145)
+            mset(player.x / tile_size, (player.y / tile_size) + i, t) 
         end
         player.y = player.y + push_size * tile_size
-        --add animation
     end
 end
 
 function spider_eat_enemies()
     for i=1,#enemies,1 do
         local em = enemies[i]
-        if em != nil and em.y < boss_y then
+        if em != nil and em.y < spider_collider_y then
             del(enemies, em)
         end
     end
@@ -498,6 +580,9 @@ function next_step()
         enemies[i].y -= tile_size
     end
     spider_eat_enemies()
+    for i=1,#projectiles,1 do
+        projectiles[i].y -= tile_size
+    end
 end
 
 

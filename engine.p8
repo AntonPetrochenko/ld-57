@@ -1,12 +1,18 @@
 pico-8 cartridge // http://www.pico-8.com
 version 42
 __lua__
-#include assets.p8
+-- #include assets.p8
 -- reload(0,0,0x4300,'assets.p8')
 
 tile_size = 8
 
 step = 0
+
+map_offset_x = 2
+map_offset_y = 5
+map_size_x = 13
+map_size_y = 18
+
 camera_offset = 0 
 camera_speed = 0.2
 
@@ -17,6 +23,11 @@ floor_tile = 145
 player = {}
 
 enemies = {}
+en_builds = {
+    [1] = build_snake,
+    [2] = build_flame,
+    [3] = build_bat,
+}
 
 function build_snake(x, y) 
     local function draw(self)
@@ -48,6 +59,66 @@ function build_snake(x, y)
         dir=1,
         sprites={23, 24},
         curr_spr=1,
+    }
+end
+
+function build_bat(x, y) 
+    local function draw(self)
+        spr(self.sprites[self.curr_spr], self.x-4, self.y, 1, 1, self.flip)
+        spr(self.sprites[self.curr_spr], self.x+4, self.y, 1, 1, not self.flip)
+    end
+
+    local function next_step(self)
+        local move = tile_size * self.dir
+        curr_tile_n = mget((self.x + move) / tile_size, self.y / tile_size)
+        
+        if fget(curr_tile_n, 0) then
+            move = 0
+        end
+        
+        self.x += move
+
+        self.curr_spr += 1
+        if self.curr_spr > #self.sprites then self.curr_spr = 1 end
+    end
+
+    return {
+        x=x,
+        y=y,
+        draw=draw,
+        next_step=next_step,
+        flip=false,
+        dir=1,
+        sprites={7, 8},
+        curr_spr=1,
+    }
+end
+
+function build_flame(x, y) 
+    local function draw(self)
+        spr(39, self.x, self.y, 1, 1, self.flip)
+    end
+
+    local function next_step(self)
+        local move = tile_size * self.dir
+        curr_tile_n = mget(self.x / tile_size, (self.y + move) / tile_size)
+        
+        if fget(curr_tile_n, 0) then
+            self.dir *= -1
+            move = 0
+        end
+        
+        self.y += move
+        self.flip = not self.flip
+    end
+
+    return {
+        x=x,
+        y=y,
+        draw=draw,
+        next_step=next_step,
+        flip=false,
+        dir=-1,
     }
 end
 
@@ -140,17 +211,35 @@ function _draw()
     map(16, 0, 0, 0, 16, 16)
     spider_gfx_draw()
 
+    --debug
     print(#enemies, 0, 0, 7)
-
 end
 
 function _generate_next_line()
-    tiles = {128, 129, 130, 145, 160, 161, 162, 163, 145, 145, 145, 145, 145, 145 , 145, 145, 145 , 145, 145, 145}
+    tiles = {128, 129, 130, 145, 160, 161, 162, 163, 145, 145, 145, 145, 145, 145, 145, 145, 145, 145, 145, 145}
     for i=map_offset_x,map_size_x,1 do
         tile = flr(rnd(#tiles)) + 1
         mset(i, map_size_y, tiles[tile])
         if tiles[tile] == 145 and rnd(20) < 1 then 
-            enemies[#enemies+1] = build_snake(i * tile_size, map_size_y * tile_size)
+            tp = flr(rnd(4))
+            if tp == 1 then
+                enemies[#enemies+1] = build_snake(i * tile_size, map_size_y * tile_size)    
+            end
+            if tp == 2 then
+                enemies[#enemies+1] = build_bat(i * tile_size, map_size_y * tile_size)    
+            end
+            if tp == 3 then
+                enemies[#enemies+1] = build_flame(i * tile_size, map_size_y * tile_size)    
+            end
+            
+        end
+    end
+end
+
+function _move_map()
+    for i=map_offset_x,map_size_x,1 do
+        for j=map_offset_y,map_size_y+1,1 do
+            mset(i,j-1, mget(i, j)) 
         end
     end
 end
@@ -161,24 +250,11 @@ function next_step()
     enemies:next_step()
 
     _generate_next_line()
-    _redraw_map()
+    _move_map()
 
     player.y -= tile_size
     for i=1,#enemies,1 do
         enemies[i].y -= tile_size
-    end
-end
-
-map_offset_x = 2
-map_offset_y = 5
-map_size_x = 13
-map_size_y = 17
-
-function _redraw_map()
-    for i=map_offset_x,map_size_x,1 do
-        for j=map_offset_y,map_size_y+1,1 do
-            mset(i,j-1, mget(i, j)) 
-        end
     end
 end
 

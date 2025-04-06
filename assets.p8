@@ -30,6 +30,7 @@ function player_gfx_controller(p)
 
 	local dmg = function()
 		damage_timer = 15
+		sfx(24)
 	end
 	local f = function()
 	
@@ -99,7 +100,7 @@ function player_gfx_controller(p)
 	
 	function do_triforce(s)
 		triforce_timer = 15
-
+		sfx(26) sfx(25)
 		
 		
 	end

@@ -63,7 +63,16 @@ end
 
 
 function spider_gfx_controller(p)
+	local pavuk_health = 100
 	local pavuk_timer = 0
+	local pavuk_damage_timer = 0
+
+	
+	local d = function(n)
+		pavuk_damage_timer = 15
+		pavuk_health -= n
+	end
+
 	local f = function()
 
 		fk_arms = {
@@ -81,6 +90,7 @@ function spider_gfx_controller(p)
 		
 
 		pavuk_timer += tmp_camera_speed or 0
+		pavuk_damage_timer -= 1
 
 		local c_bak = peek4(0x5f28)
 		camera(-64,0)
@@ -118,6 +128,10 @@ function spider_gfx_controller(p)
 		circfill(0,24,7,7)
 
 		local phi = atan2(eye_anchor_y-player.y,eye_anchor_x-player.x+64)
+
+		if (pavuk_damage_timer > 0) then
+			phi = pavuk_timer*0.9
+		end
 		local pdx = -sin(phi)*4
 		local pdy = -cos(phi)*4
 
@@ -130,7 +144,12 @@ function spider_gfx_controller(p)
 		spr(28,6,6,2,2,true)
 
 		poke4(0x5f28,c_bak)
+
+		if (btnp(🅾️)) then
+			d(10)
+		end
 	end
+
 	return f
 end
 

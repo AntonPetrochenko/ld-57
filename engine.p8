@@ -91,7 +91,7 @@ function proj_enemy_collide()
         if proj != nil then
             for i=1,#enemies,1 do
                 local em = enemies[i]
-                if em != nil and em.x == proj.x and em.y == proj.y then
+                if em != nil and em.x / tile_size == proj.x / tile_size and em.y / tile_size == proj.y / tile_size then
                     del(projectiles, proj)
                     del(enemies, em)
                 end
@@ -399,13 +399,13 @@ function updategame()
 
     tmp_camera_speed = camera_speed
 
-    if player.y > tile_size * 13 then tmp_camera_speed *= 5 end
+    if player.y > tile_size * 12 then tmp_camera_speed *= 5 end
 
     if health <= 0 then gameover() end
 
     camera_offset += tmp_camera_speed
     if camera_offset > 8 then 
-        camera_offset -= 8 
+        camera_offset -= 8
         next_step() 
     end 
 
@@ -431,7 +431,7 @@ end
 function enemy_collide()
     for i=1,#enemies,1 do
         local em = enemies[i]
-        if em != nil and player.x == em.x and player.y == em.y then
+        if em != nil and player.x / tile_size == em.x / tile_size and player.y / tile_size== em.y / tile_size then
             del(enemies, em)
             health -= 1
             player_hurt_anim()

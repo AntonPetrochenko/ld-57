@@ -121,6 +121,10 @@ function spider_gfx_controller(p)
 
 		circfill(eye_anchor_x+pdx,eye_anchor_y+pdy,3,8)
 
+		spr(9,-12,-2,3,3)
+		spr(28,-22,6,2,2)
+		spr(28,6,6,2,2,true)
+
 		poke4(0x5f28,c_bak)
 	end
 	return f

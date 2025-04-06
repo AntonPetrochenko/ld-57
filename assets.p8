@@ -23,6 +23,9 @@ function player_gfx_controller(p)
 	local step_timer = 0
 	local pickaxe_frame_timer = 0
 
+	local triforce_timer = 0
+
+
 	local damage_timer = 0
 
 	local dmg = function()
@@ -40,13 +43,27 @@ function player_gfx_controller(p)
 		if (btnp(⬆️)) player_dir = 2 step_timer = 6
 		if (btnp(⬅️)) player_dir = 3 step_timer = 6
 	
-		if (damage_timer > 0) then
-			for i=1,15 do
-				pal(i,1+flr(rnd(15)))
+
+		if (triforce_timer > 0) then
+			local inv_triforce_timer = 15-triforce_timer
+			local qq = 16
+			spr(31, player.x+16*sin((triforce_timer    ) / qq)      , player.y+16*cos((triforce_timer    ) / qq))
+			spr(31, player.x+16*sin((triforce_timer)     / qq + 1/3), player.y+16*cos((triforce_timer)     / qq + 1/3))
+			spr(31, player.x+16*sin((triforce_timer)     / qq + 2/3), player.y+16*cos((triforce_timer)     / qq + 2/3))
+			
+			local xb, yb = player.x+4, player.y+4
+			rectfill(xb - triforce_timer/4, yb, xb + triforce_timer / 4, 0)
+			spr(4,player.x,player.y-8)
+			spr(20,player.x,player.y)
+		else
+			if (damage_timer > 0) then
+				for i=1,15 do
+					pal(i,1+flr(rnd(15)))
+				end
 			end
+			spr(player_dir+step_state,player.x, player.y)
+			pal()
 		end
-		spr(player_dir+step_state,player.x, player.y)
-		pal()
 
 		if pickaxe_frame_timer >= 0 then
 			local animation_set = pickaxe_frames[player_dir]
@@ -55,13 +72,21 @@ function player_gfx_controller(p)
 			local cpfd = animation_set[current_pickaxe_frame]
 
 			if cpfd then
+				if (pickaxe_double_flag) then
+					pal(6,12)
+				end
 				spr(cpfd[1], player.x + cpfd[2], player.y + cpfd[3], 1,1, cpfd[4], cpfd[5])
+				pal()
 			else
 				print(cpfd)
 				print(animation_set)
 				print(current_pickaxe_frame)
 			end
 		end
+
+		
+		triforce_timer -= 1
+		
 
 	end
 	
@@ -72,8 +97,18 @@ function player_gfx_controller(p)
 	end
 
 	
+	function do_triforce(s)
+		triforce_timer = 15
+
+		
+		
+	end
+
+	local get_triforce_timer = function()
+		return triforce_timer
+	end
 	
-	return f,s,g,dmg
+	return f,s,g,dmg,do_triforce,get_triforce_timer
 	
 end
 
@@ -172,7 +207,7 @@ function spider_gfx_controller(p)
 
 	end
 
-	return f
+	return f,d
 end
 
 local draw_p, atk_p = player_gfx_controller()

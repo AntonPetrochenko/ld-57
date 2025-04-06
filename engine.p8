@@ -30,6 +30,7 @@ gem_upgrade_count = 0
 gem_projectile_count = 0
 health = 3
 extra_dig_chance = 0
+boss_health = 100
 
 gem_drop = {[160] = 12,[161] = 13,[162] = 14,[163] = 15}
 
@@ -245,7 +246,7 @@ function _update()
 end
 
 flash_timer = 0
-flash_colors_upgrade = {12, 13, 7}
+flash_colors_upgrade = {12, 13}
 flash_colors_power = {10, 9, 8}
 flash_colors_projectile = {11, 3, 5}
 
@@ -311,8 +312,8 @@ function _draw()
 
     pal()
     --debug
-    print(#enemies, 0, 0, 7)
-    print(want_spawn_gem,16,0)
+    -- print(#enemies, 0, 0, 7)
+    -- print(want_spawn_gem,16,0)
 end
 
 
@@ -343,7 +344,7 @@ function _generate_next_line()
             tile = gems[ceil(rnd(#gems))] or 13
         end
         mset(i, map_size_y, tile)
-        if tiles[tile] == 145 and rnd(20) < 1 then 
+        if not fget(tile,0) and rnd(20) < 1 then 
             tp = flr(rnd(4))
             if tp == 1 then
                 enemies[#enemies+1] = build_snake(i * tile_size, map_size_y * tile_size)    

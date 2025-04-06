@@ -262,6 +262,8 @@ function _update()
     player.x += move.x
     player.y += move.y
 
+    collide_enemies()
+
     tmp_camera_speed = camera_speed
 
     if player.y > tile_size * 13 then tmp_camera_speed *= 5 end
@@ -272,6 +274,16 @@ function _update()
         next_step() 
     end 
     
+end
+
+
+function collide_enemies()
+    for i=1,#enemies,1 do
+        if player.x == enemies[i].x and player.y == enemies[i].y then
+            del(enemies, enemies[i])
+            health -= 1
+        end
+    end
 end
 
 flash_timer = 0

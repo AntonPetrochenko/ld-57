@@ -102,7 +102,6 @@ function player_gfx_controller(p)
 		triforce_timer = 15
 		sfx(26) sfx(25)
 		
-		
 	end
 
 	local get_triforce_timer = function()
@@ -128,8 +127,9 @@ function win_game()
 		rectfill(64-wtimer*1.5,0,64+wtimer*1.5,128,2)
 		rectfill(64-wtimer*1.3,0,64+wtimer*1.3,128,13)
 		rectfill(64-wtimer,0,64+wtimer,128,7)
-
-		if (stable_win_timer > 30) then
+		
+		if (stable_win_timer > 60) then
+			if (stable_win_timer == 61) sfx(37)
 			print('yOU WIN!',12,32,1)
 			print('tHANK YOU FOR PLAYING!')
 		end
@@ -147,6 +147,8 @@ function spider_gfx_controller(p)
 	local d = function(n)
 		pavuk_damage_timer = 15
 		pavuk_health -= n
+
+		if (pavuk_health < 1) then win_game() end
 	end
 
 	local f = function()

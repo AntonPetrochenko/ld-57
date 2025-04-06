@@ -202,8 +202,8 @@ function enemies.next_step(self)
     end
 end
 
-local player_gfx_draw, player_swing_pick, get_player_dir = player_gfx_controller(player)
-local spider_gfx_draw = spider_gfx_controller(player)
+local player_gfx_draw, player_swing_pick, get_player_dir, player_hurt_anim = player_gfx_controller(player)
+local spider_gfx_draw, spider_damage = spider_gfx_controller(player)
 
 function player.draw(self) 
     player_gfx_draw()

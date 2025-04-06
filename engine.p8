@@ -28,8 +28,8 @@ GEM_UPGRADE = 13
 GEM_PROJECTILE = 14
 GEM_HP = 15
 
-gem_power_count = 3
-gem_upgrade_count = 5
+gem_power_count = 0
+gem_upgrade_count = 0
 gem_projectile_count = 0
 health = 3
 extra_dig_chance = 0

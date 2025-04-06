@@ -303,6 +303,9 @@ function enemies.next_step(self)
 end
 
 
+menuitem(1,'win game', win_game)
+
+
 
 function player.draw(self) 
     player_gfx_draw()

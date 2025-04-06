@@ -52,8 +52,12 @@ function player_gfx_controller(p)
 	end
 	
 	local s = function() pickaxe_frame_timer = 3	end
+
+	local g = function()
+		return player_dir
+	end
 	
-	return f,s
+	return f,s,g
 	
 end
 

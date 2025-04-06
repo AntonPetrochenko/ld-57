@@ -441,13 +441,13 @@ function _generate_next_line()
         if not fget(tile, 0) and rnd(20) < 1 and i > map_offset_x and i < map_size_x then 
             tp = flr(rnd(4))
             if tp == 1 then
-                enemies[#enemies+1] = build_bat(i * tile_size, map_size_y * tile_size)    
+                enemies[#enemies+1] = build_snake(i * tile_size, map_size_y * tile_size)    
             end
             if tp == 2 then
                 enemies[#enemies+1] = build_bat(i * tile_size, map_size_y * tile_size)    
             end
             if tp == 3 then
-                enemies[#enemies+1] = build_bat(i * tile_size, map_size_y * tile_size)    
+                enemies[#enemies+1] = build_flame(i * tile_size, map_size_y * tile_size)    
             end
             
         end

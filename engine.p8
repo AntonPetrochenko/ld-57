@@ -122,28 +122,28 @@ function build_bat(x, y)
         local dir = {x = (player.x - self.x), y = (player.y - self.y)}
         local move = {x = sign(dir.x) * tile_size, y = sign(dir.y) * tile_size}
 
-        -- if dir.x != 0 and dir.y != 0 then
-        --     if fget(mget((self.x + move.x) / tile_size, self.y / tile_size), 0) then 
-        --         move.y = 0
-        --     else 
-        --         move.x = 0
-        --     end
+        if dir.x != 0 and dir.y != 0 then
+            if fget(mget((self.x + move.x) / tile_size, self.y / tile_size), 0) then 
+                move.y = 0
+            else 
+                move.x = 0
+            end
+        end
+
+        -- if abs(dir.x) >= abs(dir.y) and fget(mget((self.x + move.x) / tile_size, (self.y + move.y) / tile_size), 0) then 
+        --     move.x = 0
+        --     move.y = sign(dir.y) * tile_size
+        -- end
+        
+        -- if move.x != 0 and move.y != 0 then
+        --     move.y = 0
+        --     move.x = sign(dir.x) * tile_size
         -- end
 
-        if abs(dir.x) >= abs(dir.y) and fget(mget((self.x + move.x) / tile_size, (self.y + move.y) / tile_size), 0) then 
-            move.x = 0
-            move.y = sign(dir.y) * tile_size
-        end
-        
-        if move.x != 0 and move.y != 0 then
-            move.y = 0
-            move.x = sign(dir.x) * tile_size
-        end
-
-        if abs(player.y - self.y) > 0 and move.x == 0 and fget(mget(self.x / tile_size, (self.y + sign(dir.y) * tile_size) / tile_size), 0) then 
-            move.x = 0
-            move.y = sign(dir.y) * tile_size
-        end
+        -- if abs(player.y - self.y) > 0 and move.x == 0 and fget(mget(self.x / tile_size, (self.y + sign(dir.y) * tile_size) / tile_size), 0) then 
+        --     move.x = 0
+        --     move.y = sign(dir.y) * tile_size
+        -- end
 
 
         curr_tile_n = mget((self.x + move.x) / tile_size, (self.y + move.y) / tile_size)
@@ -223,9 +223,16 @@ end
 function _init()
     player.x = 6 * tile_size
     player.y = 10 * tile_size
+    gem_power_count = 0
+    gem_upgrade_count = 0
+    gem_projectile_count = 0
+    health = 3
+    extra_dig_chance = 0
+    boss_health = 100
+
 end
 
-function _update()
+function updategame()
     move = {x = 0, y = 0}
     if btnp(0) then
         move.x = -tile_size
@@ -280,12 +287,13 @@ function _update()
 
     if player.y > tile_size * 13 then tmp_camera_speed *= 5 end
 
+    if health <= 0 then gameover() end
+
     camera_offset += tmp_camera_speed
     if camera_offset > 8 then 
         camera_offset -= 8 
         next_step() 
     end 
-    
 end
 
 function enemy_collide()
@@ -304,7 +312,7 @@ flash_colors_power = {10, 9, 8}
 flash_colors_projectile = {11, 3, 5}
 
 flash_colors_current = {}
-function _draw()
+function drawgame()
     cls(0)
     camera(0, camera_offset)
     map(0, 0, 0, 0, 16, 17)
@@ -397,16 +405,16 @@ function _generate_next_line()
             tile = gems[ceil(rnd(#gems))] or 13
         end
         mset(i, map_size_y, tile)
-        if not fget(tile, 0) and rnd(20) < 1 then 
+        if not fget(tile, 0) and rnd(20) < 1 and i > map_offset_x and i < map_size_x then 
             tp = flr(rnd(4))
             if tp == 1 then
-                enemies[#enemies+1] = build_snake(i * tile_size, map_size_y * tile_size)    
+                enemies[#enemies+1] = build_bat(i * tile_size, map_size_y * tile_size)    
             end
             if tp == 2 then
                 enemies[#enemies+1] = build_bat(i * tile_size, map_size_y * tile_size)    
             end
             if tp == 3 then
-                enemies[#enemies+1] = build_flame(i * tile_size, map_size_y * tile_size)    
+                enemies[#enemies+1] = build_bat(i * tile_size, map_size_y * tile_size)    
             end
             
         end
@@ -458,6 +466,86 @@ function next_step()
     end
     spider_eat_enemies()
 end
+
+
+function printo(str,startx,
+    starty,col,
+    col_bg)
+    print(str,startx+1,starty,col_bg)
+    print(str,startx-1,starty,col_bg)
+    print(str,startx,starty+1,col_bg)
+    print(str,startx,starty-1,col_bg)
+    print(str,startx+1,starty-1,col_bg)
+    print(str,startx-1,starty-1,col_bg)
+    print(str,startx-1,starty+1,col_bg)
+    print(str,startx+1,starty+1,col_bg)
+    print(str,startx,starty,col)
+end
+
+--print string centered with 
+--outline.
+function printc(
+	str,x,y,
+	col,col_bg,
+	special_chars)
+
+	local len=(#str*4)+(special_chars*3)
+	local startx=x-(len/2)
+	local starty=y-2
+	printo(str,startx,starty,col,col_bg)
+end
+
+function gameoverdraw()
+	for x=0,127 do
+		for y=0,127 do
+			if rnd(20)<1 then
+				pset(x,y,pget(x,y-1))
+			end
+		end
+	end
+	if gameovertime > 15 then
+		printc("game over",64,64,8,1,0)
+	end
+	flip()
+end
+
+function gameoverupdate()
+    if btnp(4) then 
+        reset()
+        _init()
+        setgamestate("game")
+    end
+
+    gameovertime +=1
+end
+
+gamestates = {
+	gameover = {
+		draw = gameoverdraw,
+		update = gameoverupdate
+	},
+	game = {
+		draw = drawgame,
+		update = updategame
+	}
+}
+function setgamestate(state)
+	_update = gamestates[state].update
+	_draw = gamestates[state].draw
+end
+
+
+
+gameoverscore = 0
+gameovertime = 0
+function gameover()
+	gameovertime += 1
+	setgamestate("gameover")
+end
+
+
+setgamestate("game")
+
 
 --- kitao/pico8-libs -> perlin.lua
  local f={}

@@ -22,9 +22,16 @@ function player_gfx_controller(p)
 	local step_state = 0
 	local step_timer = 0
 	local pickaxe_frame_timer = 0
+
+	local damage_timer = 0
+
+	local dmg = function()
+		damage_timer = 15
+	end
 	local f = function()
 	
 		step_timer -= 1
+		damage_timer -= 1
 		pickaxe_frame_timer -= pickaxe_frame_timer > 1 and 0.7 or 0.2
 		if step_timer <= 0 then step_state = 0 else step_state = 16 end 
 	
@@ -33,7 +40,13 @@ function player_gfx_controller(p)
 		if (btnp(⬆️)) player_dir = 2 step_timer = 6
 		if (btnp(⬅️)) player_dir = 3 step_timer = 6
 	
+		if (damage_timer > 0) then
+			for i=1,15 do
+				pal(i,1+flr(rnd(15)))
+			end
+		end
 		spr(player_dir+step_state,player.x, player.y)
+		pal()
 
 		if pickaxe_frame_timer >= 0 then
 			local animation_set = pickaxe_frames[player_dir]
@@ -49,6 +62,7 @@ function player_gfx_controller(p)
 				print(current_pickaxe_frame)
 			end
 		end
+
 	end
 	
 	local s = function() pickaxe_frame_timer = 3	end
@@ -56,8 +70,10 @@ function player_gfx_controller(p)
 	local g = function()
 		return player_dir
 	end
+
 	
-	return f,s,g
+	
+	return f,s,g,dmg
 	
 end
 
@@ -92,6 +108,8 @@ function spider_gfx_controller(p)
 		pavuk_timer += tmp_camera_speed or 0
 		pavuk_damage_timer -= 1
 
+		local pavuk_base_color = (pavuk_damage_timer > 0) and flr(rnd(15)) or 5
+
 		local c_bak = peek4(0x5f28)
 		camera(-64,0)
 
@@ -115,12 +133,12 @@ function spider_gfx_controller(p)
 		end
 
 		ovalfill(-21,-1,21,33,0)
-		draw_fk_arms(0,-1,5)
+		draw_fk_arms(0,-1,pavuk_base_color)
 
 		
 		
-		ovalfill(-20,0,20,32,5)
-		draw_fk_arms(5,0,4)
+		ovalfill(-20,0,20,32,pavuk_base_color)
+		draw_fk_arms(pavuk_base_color,0,4)
 
 		local eye_anchor_x = 0
 		local eye_anchor_y = 24
@@ -145,9 +163,13 @@ function spider_gfx_controller(p)
 
 		poke4(0x5f28,c_bak)
 
-		if (btnp(🅾️)) then
-			d(10)
-		end
+		pavuk_health = mid(0,pavuk_health,100)
+		rectfill(3,3,125,6,0)
+		rectfill(3,3,3+(pavuk_health/100)*125,6,8)
+		
+		print('🐱 gIANT ENEMY SPIDER',4,4,0)
+		print('🐱 gIANT ENEMY SPIDER',3,3,7)
+
 	end
 
 	return f

@@ -559,7 +559,7 @@ function _generate_next_line()
     world_vertical_position += 1
     want_spawn_gem -= 1
 
-    gaps = { 131, 145, 146, 147, 148, 149, 149, 149, 145, 145, 145, 145, 145}
+    gaps = { 131, 131, 131, 145, 146, 147, 148, 149, 149, 149, 145, 145, 145, 145, 145}
     gems = { 160, 161, 161, 162, 162, 163 }
     tiles = { 'gap', 'gap', 135, 136, 137 }
     for i=map_offset_x,map_size_x,1 do

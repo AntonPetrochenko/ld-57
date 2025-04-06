@@ -133,6 +133,11 @@ function win_game()
 			print('yOU WIN!',12,32,1)
 			print('tHANK YOU FOR PLAYING!')
 		end
+		if (btnp()>0 and stable_win_timer > 70) then
+			reload()
+			reset()
+			run()
+		end
 		flip()
 	end
 end

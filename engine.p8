@@ -32,6 +32,10 @@ health = 3
 extra_dig_chance = 0
 boss_health = 100
 
+boss_y = 4
+push_size = 4
+
+
 gem_drop = {[160] = 12,[161] = 13,[162] = 14,[163] = 15}
 
 floor_tile = 145
@@ -118,6 +122,13 @@ function build_bat(x, y)
         local dir = {x = (player.x - self.x), y = (player.y - self.y)}
         local move = {x = sign(dir.x) * tile_size, y = sign(dir.y) * tile_size}
 
+        -- if dir.x != 0 and dir.y != 0 then
+        --     if fget(mget((self.x + move.x) / tile_size, self.y / tile_size), 0) then 
+        --         move.y = 0
+        --     else 
+        --         move.x = 0
+        --     end
+        -- end
 
         if abs(dir.x) >= abs(dir.y) and fget(mget((self.x + move.x) / tile_size, (self.y + move.y) / tile_size), 0) then 
             move.x = 0
@@ -263,7 +274,7 @@ function _update()
     player.x += move.x
     player.y += move.y
 
-    collide_enemies()
+    enemy_collide()
 
     tmp_camera_speed = camera_speed
 
@@ -277,11 +288,11 @@ function _update()
     
 end
 
-
-function collide_enemies()
+function enemy_collide()
     for i=1,#enemies,1 do
-        if player.x == enemies[i].x and player.y == enemies[i].y then
-            del(enemies, enemies[i])
+        local em = enemies[i]
+        if em != nil and player.x == em.x and player.y == em.y then
+            del(enemies, em)
             health -= 1
         end
     end
@@ -386,7 +397,7 @@ function _generate_next_line()
             tile = gems[ceil(rnd(#gems))] or 13
         end
         mset(i, map_size_y, tile)
-        if not fget(tile,0) and rnd(20) < 1 then 
+        if not fget(tile, 0) and rnd(20) < 1 then 
             tp = flr(rnd(4))
             if tp == 1 then
                 enemies[#enemies+1] = build_snake(i * tile_size, map_size_y * tile_size)    
@@ -412,6 +423,26 @@ function _move_map()
     end
 end
 
+function spider_colide()
+    if player.y / tile_size < boss_y then 
+        health -= 1
+        for i=1,push_size,1 do
+            mset(player.x / tile_size, (player.y / tile_size) + i, floor_tile) 
+        end
+        player.y = player.y + push_size * tile_size
+        --add animation
+    end
+end
+
+function spider_eat_enemies()
+    for i=1,#enemies,1 do
+        local em = enemies[i]
+        if em != nil and em.y < boss_y then
+            del(enemies, em)
+        end
+    end
+end
+
 function next_step()
     step += 1
 
@@ -421,9 +452,11 @@ function next_step()
     _move_map()
 
     player.y -= tile_size
+    spider_colide()
     for i=1,#enemies,1 do
         enemies[i].y -= tile_size
     end
+    spider_eat_enemies()
 end
 
 --- kitao/pico8-libs -> perlin.lua

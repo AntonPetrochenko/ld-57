@@ -48,13 +48,15 @@ function player_gfx_controller(p)
 		if (triforce_timer > 0) then
 			local inv_triforce_timer = 15-triforce_timer
 			local qq = 16
-			spr(31, player.x+16*sin((triforce_timer    ) / qq)      , player.y+16*cos((triforce_timer    ) / qq))
-			spr(31, player.x+16*sin((triforce_timer)     / qq + 1/3), player.y+16*cos((triforce_timer)     / qq + 1/3))
-			spr(31, player.x+16*sin((triforce_timer)     / qq + 2/3), player.y+16*cos((triforce_timer)     / qq + 2/3))
+			if pavuk_active then
+				local xb, yb = player.x+4, player.y+4
+				spr(31, player.x+16*sin((triforce_timer    ) / qq)      , player.y+16*cos((triforce_timer    ) / qq))
+				spr(31, player.x+16*sin((triforce_timer)     / qq + 1/3), player.y+16*cos((triforce_timer)     / qq + 1/3))
+				spr(31, player.x+16*sin((triforce_timer)     / qq + 2/3), player.y+16*cos((triforce_timer)     / qq + 2/3))
+				rectfill(xb - triforce_timer/4, yb, xb + triforce_timer / 4, 0)
+				spr(4,player.x,player.y-8)
+			end
 			
-			local xb, yb = player.x+4, player.y+4
-			rectfill(xb - triforce_timer/4, yb, xb + triforce_timer / 4, 0)
-			spr(4,player.x,player.y-8)
 			spr(20,player.x,player.y)
 		else
 			if (damage_timer > 0) then
@@ -100,8 +102,6 @@ function player_gfx_controller(p)
 	
 	function do_triforce(s)
 		triforce_timer = 15
-		sfx(26) sfx(25)
-		
 	end
 
 	local get_triforce_timer = function()
@@ -118,6 +118,12 @@ stable_win_timer = 0
 wtimer = 0
 wtd = 0.1
 function win_game()
+	music(-1)
+	camera_speed = 0
+	enable_win_sequence = true
+end
+
+function end_game_win()
 	music(37)
 	while true do
 		stable_win_timer += 1
@@ -128,12 +134,26 @@ function win_game()
 		rectfill(64-wtimer*1.3,0,64+wtimer*1.3,128,13)
 		rectfill(64-wtimer,0,64+wtimer,128,7)
 		
-		if (stable_win_timer > 60) then
-			if (stable_win_timer == 61) sfx(37)
+		if (stable_win_timer > 90) then
+			if (stable_win_timer == 91) sfx(37)
 			print('yOU WIN!',12,32,1)
 			print('tHANK YOU FOR PLAYING!')
+			print('')
+			if not is_hard_mode then
+				print('tO ENABLE HARD MODE,')
+				print('HIT THE STARTING CHEST')
+				print('3 TIMES FROM THE TOP')
+				print('AND WAIT 3 SECONDS')
+			else
+				print('you have done well!')
+				print('')
+				print('iN THE COMMENTS,')
+				print('SAY THE MAGIC WORD')
+				print('"cucumber"')
+				print('TO PROVE YOUR WORTH!')
+			end
 		end
-		if (stable_win_timer > 120) then
+		if (stable_win_timer > 120 and btn() > 0) then
 			reload()
 			reset()
 			run()
@@ -147,16 +167,24 @@ function spider_gfx_controller(p)
 	local pavuk_health = 100
 	local pavuk_timer = 0
 	local pavuk_damage_timer = 0
+	pavuk_descend = 64
+	local pavuk_shoot_timer = -1
+
+	local boss_phase_2 = false
 
 	
 	local d = function(n)
+		local dmg_to_deal = n
+		if is_hard_mode then dmg_to_deal*=0.75 end
 		pavuk_damage_timer = 15
-		pavuk_health -= n
+		pavuk_health -= dmg_to_deal
 
 		if (pavuk_health < 1) then win_game() end
 	end
 
 	local f = function()
+
+		if (pavuk_health < 50 and not boss_phase_2) camera_speed += 0.1 boss_phase_2 = true sfx(44)
 
 		fk_arms = {
 			{-32,16},
@@ -173,13 +201,35 @@ function spider_gfx_controller(p)
 		
 
 		pavuk_timer += tmp_camera_speed or 0
+
+		
 		pavuk_damage_timer -= 1
-
-		local pavuk_base_color = (pavuk_damage_timer > 0) and flr(rnd(15)) or 5
-
+		
+		if (pavuk_shoot_timer == 0) then
+			build_spider_projectile(player)
+			sfx(19)
+		end
+		
+		if (pavuk_shoot_timer < -30*(is_hard_mode and 5 or 10)) pavuk_shoot_timer = 30
+		
+		
+		
+		
+		local pavuk_base_color = 5
+		
+		if (pavuk_damage_timer > 0) pal(pavuk_base_color,flr(rnd(15))+1)
+		
 		local c_bak = peek4(0x5f28)
-		camera(-64,0)
-
+		camera(-64,pavuk_descend)
+		
+		if pavuk_descend > 0 and pavuk_active then
+			pavuk_descend -= 1
+			pavuk_timer += 1
+		end
+		if pavuk_descend <= 0 then
+			pavuk_shoot_timer -= 1
+		end
+		
 		local function draw_fk_arms(c,a,b)
 			for i=1,#fk_arms do
 				local arm = fk_arms[i]
@@ -187,7 +237,7 @@ function spider_gfx_controller(p)
 				local offset_y = cos((i>4 and pavuk_timer or -pavuk_timer) /40+i/4 + (i>4 and 0.2 or 0))*8
 				for vi = a,b do
 					line(0,24+vi,arm[1]+offset_x,arm[2]+offset_y+vi,c)
-		
+					
 					line(
 						arm[1]+offset_x,
 						arm[2]+offset_y+vi,
@@ -198,44 +248,63 @@ function spider_gfx_controller(p)
 				end
 			end
 		end
+		
 
+		
+		draw_fk_arms(0,-1,5)
 		ovalfill(-21,-1,21,33,0)
-		draw_fk_arms(0,-1,pavuk_base_color)
-
 		
+		spr(47,-12,24,1,2)
+		spr(47,4,  24,1,2,true)
 		
-		ovalfill(-20,0,20,32,pavuk_base_color)
+		fillp(0b1010010110100101)
 		draw_fk_arms(pavuk_base_color,0,4)
-
+		fillp()
+		ovalfill(-20,0,20,32,pavuk_base_color)
+		
+		pal()
 		local eye_anchor_x = 0
 		local eye_anchor_y = 24
-
+		
 		circfill(0,24,7,7)
-
+		
 		local phi = atan2(eye_anchor_y-player.y,eye_anchor_x-player.x+64)
-
+		
 		if (pavuk_damage_timer > 0) then
 			phi = pavuk_timer*0.9
 		end
 		local pdx = -sin(phi)*4
 		local pdy = -cos(phi)*4
-
 		
+		
+		global_spider_eye_pos_x=eye_anchor_x+pdx
+		global_spider_eye_pos_y=eye_anchor_y+pdy
 
-		circfill(eye_anchor_x+pdx,eye_anchor_y+pdy,3,8)
 
+		local eye_color = 8
+		if (pavuk_shoot_timer > 0) then
+			if (pavuk_shoot_timer%2==0) eye_color = 9
+			fillp(0b01011010010110100101)
+			circ(global_spider_eye_pos_x,global_spider_eye_pos_y,pavuk_shoot_timer,0x81)
+			fillp()
+		end
+		
+		circfill(global_spider_eye_pos_x,global_spider_eye_pos_y,3,eye_color)
+		
 		spr(9,-12,-2,3,3)
 		spr(28,-22,6,2,2)
 		spr(28,6,6,2,2,true)
-
-		poke4(0x5f28,c_bak)
-
-		pavuk_health = mid(0,pavuk_health,100)
-		rectfill(3,3,125,6,0)
-		rectfill(3,3,3+(pavuk_health/100)*125,6,8)
 		
-		print('🐱 gIANT ENEMY SPIDER',4,4,0)
-		print('🐱 gIANT ENEMY SPIDER',3,3,7)
+		poke4(0x5f28,c_bak)
+		
+		pavuk_health = mid(0,pavuk_health,100)
+		if (pavuk_descend <= 0) then
+			rectfill(3,3,125,6,0)
+			rectfill(3,3,3+(pavuk_health/100)*125,6,8)
+			
+			print('🐱 gIANT ENEMY SPIDER',4,4,0)
+			print('🐱 gIANT ENEMY SPIDER',3,3,7)
+		end
 
 	end
 

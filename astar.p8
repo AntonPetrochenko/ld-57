@@ -1,331 +1,161 @@
 pico-8 cartridge // http://www.pico-8.com
 version 42
 __lua__
--- player = {
---  x = 64,
---  y = 64
--- }
+-- A* pathfinding
+-- by @richy486
 
--- poke(0x5f2d, 0x1)
+function astar(startx, starty, goalx, goaly)
+    printh("---------------")
+    printh("starting a star")
 
-function player_gfx_controller(p)
+    local start = { startx, starty }
+    local goal = { goalx, goaly }
 
- -- f,x,y,h,v
-	local pickaxe_frames = {
-	 [0] = { {6,8,0,false,false},{5,6,6,false,true},{4,0,8,false,true} },
-	 [1] = { {4,0,-8,false,false},{5,6,-6,false,false},{6,8,0,false,false} },
-	 [2] = { {6,-8,0,true,false},{5,-6,-6,true,false},{4,0,-8,true,false} },
-	 [3] = { {4,0,-8,true,false},{5,-6,-6,true,false},{6,-8,0,true,false} },
-	}
+    printh("start...")
 
-	local player_dir = 0
-	local step_state = 0
-	local step_timer = 0
-	local pickaxe_frame_timer = 0
+    local frontier = {}
+    insert(frontier, start, 0)
+    local came_from = {}
+    came_from[vectoindex(start)] = nil
+    local cost_so_far = {}
+    cost_so_far[vectoindex(start)] = 0
 
-	local triforce_timer = 0
+    local found = false
+    while #frontier > 0 and #frontier < 1000 do
+        local current = popEnd(frontier)
 
+        if vectoindex(current) == vectoindex(goal) then
+            found = true
+            break
+        end
 
-	local damage_timer = 0
+        local neighbours = getNeighbours(current)
+        for next in all(neighbours) do
+            local nextIndex = vectoindex(next)
+            local new_cost = cost_so_far[vectoindex(current)] + 1
 
-	local dmg = function()
-		damage_timer = 15
-		sfx(24)
-	end
-	local f = function()
-	
-		step_timer -= 1
-		damage_timer -= 1
-		pickaxe_frame_timer -= pickaxe_frame_timer > 1 and 0.7 or 0.2
-		if step_timer <= 0 then step_state = 0 else step_state = 16 end 
-	
-		if (btnp(⬇️)) player_dir = 0 step_timer = 6
-		if (btnp(➡️)) player_dir = 1 step_timer = 6
-		if (btnp(⬆️)) player_dir = 2 step_timer = 6
-		if (btnp(⬅️)) player_dir = 3 step_timer = 6
-	
+            if not cost_so_far[nextIndex] or new_cost < cost_so_far[nextIndex] then
+                cost_so_far[nextIndex] = new_cost
+                local priority = new_cost + heuristic(goal, next)
+                insert(frontier, next, priority)
+                came_from[nextIndex] = current
+            end
+        end
+    end
 
-		if (triforce_timer > 0) then
-			local inv_triforce_timer = 15-triforce_timer
-			local qq = 16
-			if pavuk_active then
-				local xb, yb = player.x+4, player.y+4
-				spr(31, player.x+16*sin((triforce_timer    ) / qq)      , player.y+16*cos((triforce_timer    ) / qq))
-				spr(31, player.x+16*sin((triforce_timer)     / qq + 1/3), player.y+16*cos((triforce_timer)     / qq + 1/3))
-				spr(31, player.x+16*sin((triforce_timer)     / qq + 2/3), player.y+16*cos((triforce_timer)     / qq + 2/3))
-				rectfill(xb - triforce_timer/4, yb, xb + triforce_timer / 4, 0,7)
-				spr(4,player.x,player.y-8)
-			end
-			
-			spr(20,player.x,player.y)
-		else
-			if (damage_timer > 0) then
-				for i=1,15 do
-					pal(i,1+flr(rnd(15)))
-				end
-			end
-			spr(player_dir+step_state,player.x, player.y)
-			pal()
-		end
+    printh("find goal..")
+    if not found then
+        printh("no path found.")
+        return nil
+    end
 
-		if pickaxe_frame_timer >= 0 then
-			local animation_set = pickaxe_frames[player_dir]
-			local pickaxe_animation_duration = 3
-			local current_pickaxe_frame = ceil(pickaxe_animation_duration - pickaxe_frame_timer)
-			local cpfd = animation_set[current_pickaxe_frame]
+    local current = came_from[vectoindex(goal)]
+    if not current then
+        printh("path incomplete.")
+        return nil
+    end
 
-			if cpfd then
-				if (pickaxe_double_flag) then
-					pal(6,12)
-				end
-				spr(cpfd[1], player.x + cpfd[2], player.y + cpfd[3], 1,1, cpfd[4], cpfd[5])
-				pal()
-			else
-				print(cpfd)
-				print(animation_set)
-				print(current_pickaxe_frame)
-			end
-		end
+    local path = {}
+    local sindex = vectoindex(start)
+    local cindex = vectoindex(current)
 
-		
-		triforce_timer -= 1
-		
+    while current and cindex != sindex do
+        add(path, current)
+        current = came_from[cindex]
+        if current then
+            cindex = vectoindex(current)
+        else
+            break
+        end
+    end
 
-	end
-	
-	local s = function() pickaxe_frame_timer = 3	end
+    if cindex != sindex then
+        printh("path incomplete.")
+        return nil
+    end
 
-	local g = function()
-		return player_dir
-	end
+    reverse(path)
 
-	
-	function do_triforce(s)
-		triforce_timer = 15
-	end
+    path[#path + 1] = goal
 
-	local get_triforce_timer = function()
-		return triforce_timer
-	end
-	
-	return f,s,g,dmg,do_triforce,get_triforce_timer
-	
+    printh("..done")
+    if #path == 0 then
+        return nil
+    end
+
+    return { x = path[1][1], y = path[1][2] }
 end
 
-game_won = false
-
-stable_win_timer = 0
-wtimer = 0
-wtd = 0.1
-function win_game()
-	music(-1)
-	camera_speed = 0
-	enable_win_sequence = true
+function heuristic(a, b)
+    return abs(a[1] - b[1]) + abs(a[2] - b[2])
 end
 
-function end_game_win()
-	music(37)
-	while true do
-		stable_win_timer += 1
-		wtd *= 1.3
-		wtimer += wtd
-		rectfill(64-wtimer*2,0,64+wtimer*2,128,1)
-		rectfill(64-wtimer*1.5,0,64+wtimer*1.5,128,2)
-		rectfill(64-wtimer*1.3,0,64+wtimer*1.3,128,13)
-		rectfill(64-wtimer,0,64+wtimer,128,7)
-		
-		if (stable_win_timer > 90) then
-			if (stable_win_timer == 91) sfx(37)
-			print('yOU WIN!',12,32,1)
-			print('tHANK YOU FOR PLAYING!')
-			print('')
-			if not is_hard_mode then
-				print('tO ENABLE HARD MODE,')
-				print('HIT THE STARTING CHEST')
-				print('3 TIMES FROM THE TOP')
-				print('AND WAIT 3 SECONDS')
-			else
-				print('you have done well!')
-				print('')
-				print('iN THE COMMENTS,')
-				print('SAY THE MAGIC WORD')
-				print('"cucumber"')
-				print('TO PROVE YOUR WORTH!')
-			end
-		end
-		if (stable_win_timer > 120 and btn() > 0) then
-			reload()
-			reset()
-			run()
-		end
-		flip()
-	end
+function getNeighbours(pos)
+    local neighbours = {}
+    local x = pos[1]
+    local y = pos[2]
+
+    if x > 0 and not fget(mget(x - 1, y), 0) then
+        add(neighbours, { x - 1, y })
+    end
+    if x < 15 and not fget(mget(x + 1, y), 0) then
+        add(neighbours, { x + 1, y })
+    end
+    if y > 0 and not fget(mget(x, y - 1), 0) then
+        add(neighbours, { x, y - 1 })
+    end
+    if y < 15 and not fget(mget(x, y + 1), 0) then
+        add(neighbours, { x, y + 1 })
+    end
+
+    if (x + y) % 2 == 0 then
+        reverse(neighbours)
+    end
+
+    return neighbours
 end
 
-
-function spider_gfx_controller(p)
-	local pavuk_health = 100
-	local pavuk_timer = 0
-	local pavuk_damage_timer = 0
-	pavuk_descend = 64
-	local pavuk_shoot_timer = -1
-
-	local boss_phase_2 = false
-
-	
-	local d = function(n)
-		local dmg_to_deal = n
-		if is_hard_mode then dmg_to_deal*=0.75 end
-		pavuk_damage_timer = 15
-		pavuk_health -= dmg_to_deal
-
-		if (pavuk_health < 1) then win_game() end
-	end
-
-	local f = function()
-
-		if (pavuk_health < 50 and not boss_phase_2) camera_speed += 0.1 boss_phase_2 = true sfx(44)
-
-		fk_arms = {
-			{-32,16},
-			{-32,6},
-			{-24,10},
-			{-24,22},
-			
-			{32,16},
-			{32,6},
-			{24,10},
-			{24,22},
-		}
-
-		
-
-		pavuk_timer += tmp_camera_speed or 0
-
-		
-		pavuk_damage_timer -= 1
-		
-		if (pavuk_shoot_timer == 0) then
-			build_spider_projectile(player)
-			sfx(19)
-		end
-		
-		if (pavuk_shoot_timer < -30*(is_hard_mode and 5 or 7)) pavuk_shoot_timer = 30
-		
-		
-		
-		
-		local pavuk_base_color = 5
-		
-		if (pavuk_damage_timer > 0) pal(pavuk_base_color,flr(rnd(15))+1)
-		
-		local c_bak = peek4(0x5f28)
-		camera(-64,pavuk_descend)
-		
-		if pavuk_descend > 0 and pavuk_active then
-			pavuk_descend -= 1
-			pavuk_timer += 1
-		end
-		if pavuk_descend <= 0 then
-			pavuk_shoot_timer -= 1
-		end
-		
-		local function draw_fk_arms(c,a,b)
-			for i=1,#fk_arms do
-				local arm = fk_arms[i]
-				local offset_x = sin((i>4 and pavuk_timer or -pavuk_timer) /40+i/4 + (i>4 and 0.2 or 0))*8
-				local offset_y = cos((i>4 and pavuk_timer or -pavuk_timer) /40+i/4 + (i>4 and 0.2 or 0))*8
-				for vi = a,b do
-					line(0,24+vi,arm[1]+offset_x,arm[2]+offset_y+vi,c)
-					
-					line(
-						arm[1]+offset_x,
-						arm[2]+offset_y+vi,
-						arm[1]+offset_x+(arm[1]+offset_x)/2,
-						arm[2]+offset_y+(arm[2]+offset_y)/2+vi,
-						c
-					)
-				end
-			end
-		end
-		
-
-		
-		draw_fk_arms(0,-1,5)
-		ovalfill(-21,-1,21,33,0)
-		
-		spr(47,-12,24,1,2)
-		spr(47,4,  24,1,2,true)
-		
-		fillp(0b1010010110100101)
-		draw_fk_arms(pavuk_base_color,0,4)
-		fillp()
-		ovalfill(-20,0,20,32,pavuk_base_color)
-		
-		pal()
-		local eye_anchor_x = 0
-		local eye_anchor_y = 24
-		
-		circfill(0,24,7,7)
-		
-		local phi = atan2(eye_anchor_y-player.y,eye_anchor_x-player.x+64)
-		
-		if (pavuk_damage_timer > 0) then
-			phi = pavuk_timer*0.9
-		end
-		local pdx = -sin(phi)*4
-		local pdy = -cos(phi)*4
-		
-		
-		global_spider_eye_pos_x=eye_anchor_x+pdx
-		global_spider_eye_pos_y=eye_anchor_y+pdy
-
-
-		local eye_color = 8
-		if (pavuk_shoot_timer > 0) then
-			if (pavuk_shoot_timer%2==0) eye_color = 9
-			fillp(0b01011010010110100101)
-			circ(global_spider_eye_pos_x,global_spider_eye_pos_y,pavuk_shoot_timer,0x81)
-			fillp()
-		end
-		
-		circfill(global_spider_eye_pos_x,global_spider_eye_pos_y,3,eye_color)
-		
-		spr(9,-12,-2,3,3)
-		spr(28,-22,6,2,2)
-		spr(28,6,6,2,2,true)
-
-		spider_gun.x = global_spider_eye_pos_x+60
-		spider_gun.y = global_spider_eye_pos_y-4
-		
-		poke4(0x5f28,c_bak)
-		
-		pavuk_health = mid(0,pavuk_health,100)
-		if (pavuk_descend <= 0) then
-			rectfill(3,3,125,6,0)
-			rectfill(3,3,3+(pavuk_health/100)*125,6,8)
-			
-			print('🐱 gIANT ENEMY SPIDER',4,4,0)
-			print('🐱 gIANT ENEMY SPIDER',3,3,7)
-		end
-
-	end
-
-	return f,d
+function insert(t, val, p)
+    if #t >= 1 then
+        add(t, {})
+        for i = #t, 2, -1 do
+            local next = t[i - 1]
+            if p < next[2] then
+                t[i] = { val, p }
+                return
+            else
+                t[i] = next
+            end
+        end
+        t[1] = { val, p }
+    else
+        add(t, { val, p })
+    end
 end
 
-local draw_p, atk_p = player_gfx_controller()
-local s_gfx = spider_gfx_controller()
+function popEnd(t)
+	local top = t[#t]
+	del(t, t[#t])
+	return top[1]
+end
 
--- while true do  
--- 	if btnp()>0 then atk_p() end  
--- 	player.x = stat(32)
--- 	player.y = stat(33)
--- 	cls() 
--- 	s_gfx() 
--- 	draw_p() 
--- 	flip() 
--- end
+function reverse(t)
+    for i = 1, (#t / 2) do
+        local temp = t[i]
+        local oppindex = #t - (i - 1)
+        t[i] = t[oppindex]
+        t[oppindex] = temp
+    end
+end
+
+function vectoindex(vec)
+    return maptoindex(vec[1], vec[2])
+end
+
+function maptoindex(x, y)
+    return ((x + 1) * 16) + y
+end
+
 __gfx__
 000000000000000000000000000000000000000000000000000070000000000000600000000000000000000000000000110a7011110c7011110b701111087011
 00a88a00000aa80000aaaa00008aa0000077660007776000000007000000000006d6000000000000000000000000000010aa770110cc770110bb770110887701

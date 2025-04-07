@@ -86,16 +86,6 @@ function astar(startx, starty, goalx, goaly)
     return { x = path[1][1], y = path[1][2] }
 end
 
-function popFront(t)
-    if #t == 0 then return nil end
-    local top = t[1]
-    for i = 1, #t - 1 do
-        t[i] = t[i + 1]
-    end
-    t[#t] = nil
-    return top[1]
-end
-
 function heuristic(a, b)
     return abs(a[1] - b[1]) + abs(a[2] - b[2])
 end

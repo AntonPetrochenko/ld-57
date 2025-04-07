@@ -50,9 +50,60 @@ enemies = {}
 projectiles = {}
 puffs = {}
 
+spider_gun = {x = 7 * tile_size, y = 2 * tile_size} -- TODO: from spider eye?
+spider_attack_speed = 5
+spider_projectiles = {}
+
+spider_projectiles_speed = 2
+
+function spider_proj_draw()
+    for i=1,#spider_projectiles,1 do
+        local proj = spider_projectiles[i]
+        if proj !=nil then spr(46, proj.x, proj.y) end
+        -- TODO: CHANGE SPR
+    end
+end
+
+function spider_proj_update()
+    for i=1,#spider_projectiles,1 do
+        local proj = spider_projectiles[i]
+        if proj != nil then 
+            if proj.x <= player.x + 4 and proj.x >= player.x - 4 and 
+                proj.y <= player.y + 4 and proj.y >= player.y - 4 then
+                del(spider_projectiles, proj)
+                health -= 1
+                player_hurt_anim()
+            else 
+                proj.x += proj.dx 
+                proj.y += proj.dy
+            end
+        end
+    end
+end
+
+
+function build_spider_projectile(p)
+    local tx = player.x - spider_gun.x
+    local ty = player.y - spider_gun.y
+    
+    if tx != 0 or ty != 0 then
+        local angle = atan2(ty, tx)
+        
+        local dx = sin(angle) * spider_projectiles_speed
+        local dy = cos(angle) * spider_projectiles_speed
+
+        spider_projectiles[#spider_projectiles+1] = {
+            x = spider_gun.x,
+            y = spider_gun.y,
+            dx = dx,
+            dy = dy,
+        }
+    end
+end
+
+
 
 projectiles_speed = 4
-
 
 function make_puff(x,y) 
     return {
@@ -359,6 +410,10 @@ function updategame()
             gem_projectile_count -= 1 
             build_projectile(player)
         end
+        -- debug spider proj
+        -- if btnp(5) then
+        --     build_spider_projectile(player)
+        -- end
 
         if ( gem_power_count > 2 and btnp(❎)) then
 			do_triforce()
@@ -440,14 +495,12 @@ function updategame()
         end
     end
 
-   
-
-
-
     
     proj_update()
     proj_spider_collide()
     proj_enemy_collide()
+
+    spider_proj_update()
 end
 
 function enemy_collide()
@@ -480,6 +533,7 @@ function drawgame()
         p.life += 1
     end
     proj_draw()
+    spider_proj_draw()
 
     -- hud
     camera()
@@ -593,11 +647,8 @@ function _generate_next_line()
             if tp == 3 then
                 enemies[#enemies+1] = build_flame(i * tile_size, map_size_y * tile_size)    
             end
-            
         end
     end
-
-    
 end
 
 function _move_map()
@@ -632,6 +683,8 @@ end
 function next_step()
     step += 1
 
+    if step % spider_attack_speed == 0 then build_spider_projectile(player) end
+
     enemies:next_step()
 
     _generate_next_line()
@@ -645,6 +698,9 @@ function next_step()
     spider_eat_enemies()
     for i=1,#projectiles,1 do
         projectiles[i].y -= tile_size
+    end
+    for i=1,#spider_projectiles,1 do
+        spider_projectiles[i].y -= tile_size
     end
 end
 

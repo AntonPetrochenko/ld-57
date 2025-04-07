@@ -2,6 +2,7 @@ pico-8 cartridge // http://www.pico-8.com
 version 42
 __lua__
 #include assets.p8
+#include astar.p8
 -- reload(0,0,0x4300,'assets.p8')
 
 tile_size = 8
@@ -73,6 +74,8 @@ function spider_proj_update()
                 del(spider_projectiles, proj)
                 health -= 1
                 player_hurt_anim()
+            elseif proj.y >= 144 then
+                del(spider_projectiles, proj)
             else 
                 proj.x += proj.dx 
                 proj.y += proj.dy
@@ -252,6 +255,7 @@ function sign(n)
     end
 end
 
+
 function build_bat(x, y) 
     local function draw(self)
         spr(self.sprites[self.curr_spr], self.x-4, self.y, 1, 1, self.flip)
@@ -259,16 +263,21 @@ function build_bat(x, y)
     end
 
     local function next_step(self)
-        local dir = {x = (player.x - self.x), y = (player.y - self.y)}
-        local move = {x = sign(dir.x) * tile_size, y = sign(dir.y) * tile_size}
-
-        if dir.x != 0 and dir.y != 0 then
-            if fget(mget((self.x + move.x) / tile_size, self.y / tile_size), 0) then 
-                move.y = 0
-            else 
-                move.x = 0
-            end
+        local next_move = astar(self.x / tile_size, self.y / tile_size, player.x / tile_size, player.y / tile_size)
+        if next_move != nil and next_move.x != nil and next_move.y != nil then
+            self.x = next_move.x * tile_size
+            self.y = next_move.y * tile_size
         end
+        -- local dir = {x = (player.x - self.x), y = (player.y - self.y)}
+        -- local move = {x = sign(dir.x) * tile_size, y = sign(dir.y) * tile_size}
+
+        -- if dir.x != 0 and dir.y != 0 then
+        --     if fget(mget((self.x + move.x) / tile_size, self.y / tile_size), 0) then 
+        --         move.y = 0
+        --     else 
+        --         move.x = 0
+        --     end
+        -- end
 
         -- if abs(dir.x) >= abs(dir.y) and fget(mget((self.x + move.x) / tile_size, (self.y + move.y) / tile_size), 0) then 
         --     move.x = 0
@@ -286,16 +295,16 @@ function build_bat(x, y)
         -- end
 
 
-        curr_tile_n = mget((self.x + move.x) / tile_size, (self.y + move.y) / tile_size)
+        -- curr_tile_n = mget((self.x + move.x) / tile_size, (self.y + move.y) / tile_size)
         
-        if fget(curr_tile_n, 0) then
-            move.x = 0
-            move.y = 0
-        end
+        -- if fget(curr_tile_n, 0) then
+        --     move.x = 0
+        --     move.y = 0
+        -- end
         
         
-        self.x += move.x
-        self.y += move.y
+        -- self.x += move.x
+        -- self.y += move.y
 
         self.curr_spr += 1
         if self.curr_spr > #self.sprites then self.curr_spr = 1 end
@@ -495,7 +504,6 @@ function updategame()
         end
     end
 
-    
     proj_update()
     proj_spider_collide()
     proj_enemy_collide()
@@ -533,13 +541,13 @@ function drawgame()
         p.life += 1
     end
     proj_draw()
-    spider_proj_draw()
 
     -- hud
     camera()
     map(16, 0, 0, 0, 16, 16)
     spider_gfx_draw()
-
+    spider_proj_draw()
+    
     for i=1,3 do
         if i<=health then
             spr(GEM_HP,120,24+i*9)
@@ -699,9 +707,9 @@ function next_step()
     for i=1,#projectiles,1 do
         projectiles[i].y -= tile_size
     end
-    for i=1,#spider_projectiles,1 do
-        spider_projectiles[i].y -= tile_size
-    end
+    -- for i=1,#spider_projectiles,1 do
+    --     spider_projectiles[i].y -= tile_size
+    -- end
 end
 
 

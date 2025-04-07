@@ -52,7 +52,7 @@ projectiles = {}
 puffs = {}
 puffs_top = {}
 
-spider_gun = {x = 7 * tile_size, y = 2 * tile_size} -- TODO: from spider eye?
+spider_gun = {x = 7 * tile_size, y = 2 * tile_size}
 spider_attack_speed = 5
 spider_projectiles = {}
 
@@ -571,6 +571,10 @@ function updategame()
             end_game_win()
         end
     end
+
+    if global_timer % 20 == 0 then
+        enemies:next_step()
+    end
 end
 
 explo_count = 0
@@ -667,8 +671,8 @@ function drawgame()
     wtf_timer+=0.02
     if (not game_started) then
         local d = function(wtf_timer,c)
-            print('mINER vITALYA ii',32+cos(wtf_timer*1.1)*3,64+cos(wtf_timer/3.3)*4,c)
-            print('cAVERN STRANGER')
+            print('   mINER vITALYA ii',24+cos(wtf_timer*1.1)*3,64+cos(wtf_timer/3.3)*4,c)
+            print('sPIDER cAVE oFFENSIVE')
         end
 
         d(wtf_timer-0.12,2)
@@ -720,8 +724,8 @@ function print_tutorial()
     print('⬅️⬆️⬅️➡️ move',51,10)
     print('')
     print('when charged:')
-    print('🅾️/(Z) big blast')
-    print('❎/(X) shoot')
+    print('🅾️/(Z) shoot')
+    print('❎/(X) big blast')
     print('⬅️⬆️⬅️➡️ dig',32,46)
     print('⬆️ open',60,90)
 
@@ -754,7 +758,8 @@ function _generate_next_line()
         end
         ]]
 
-        local density_noise = (noise(0,world_vertical_position/16,world_seed)+1)
+        local max_density = is_hard_mode and 3 or 1.3
+        local density_noise = mid(0.7,(noise(0,world_vertical_position/10,world_seed)+1),max_density)
         tile_idx = flr(tile_idx*density_noise)
 
         tile = tiles[mid(1,round(tile_idx),#tiles)] or 46
@@ -814,8 +819,6 @@ end
 
 function next_step()
     step += 1
-
-    enemies:next_step()
 
     _generate_next_line()
     _move_map()
